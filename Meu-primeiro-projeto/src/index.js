@@ -36,7 +36,8 @@ async function getRandomBlock (){
     return result 
 }
 
-async function powerHability(){
+///parte do desafio
+async function powerHability(){ 
     let randomPower = Math.random() 
     let resultPower 
 
@@ -44,21 +45,25 @@ async function powerHability(){
         case randomPower < 0.53:
             resultPower = "CASCO"
             break;
-    
         default:
             resultPower = "BOMBA"
     }
     return resultPower
 }
 
-async function  logRollResult(characterName, block, diceResult, attribute) {
-    console.log(`${characterName} 🎲 rolou um dado de ${block} ${diceResult} + ${attribute} = ${diceResult + attribute}`)
+async function logRollResult(characterName, block, diceResult, attribute, isConfront, powerHabilityEffect = 0) {
+    // Verifica se está em confronto e ajusta a exibição da habilidade de poder
+    const powerHabilityDisplay = isConfront ? ` - ${powerHabilityEffect}` : ''; // aqui eu estou fazendo uma verificação para saber se está em confronto, se estiver ele vai exibir o valor do poder, caso contrário ele vai exibir uma string vazia.
+    const totalResult = diceResult + attribute - (isConfront ? powerHabilityEffect : 0); //aqui eu fiz a subtração do valor do atributo com o valor do poder, caso esteja em confronto. 
+
+    console.log(`${characterName} 🎲 rolou um dado de ${block} ${diceResult} + ${attribute}${powerHabilityDisplay} = ${totalResult}`);
 }
+
+
 
 async function playRaceEngine(character1, character2) {
     for (let round = 1; round <= 5; round++) {
         console.log(`🏁 Rodada ${round}`);
-
         let block = await getRandomBlock();
         console.log(`Bloco sorteado: ${block}`);
 
@@ -72,14 +77,14 @@ async function playRaceEngine(character1, character2) {
             TotalTestSkill1 = diceResult1 + character1.VELOCIDADE;
             TotalTestSkill2 = diceResult2 + character2.VELOCIDADE;
 
-            await logRollResult(character1.NOME, "velocidade", diceResult1, character1.VELOCIDADE);
-            await logRollResult(character2.NOME, "velocidade", diceResult2, character2.VELOCIDADE);
+            await logRollResult(character1.NOME, "velocidade", diceResult1, character1.VELOCIDADE, false);
+            await logRollResult(character2.NOME, "velocidade", diceResult2, character2.VELOCIDADE, false);
         } else if (block === 'CURVA') {
             TotalTestSkill1 = diceResult1 + character1.MANOBRABILIDADE;
             TotalTestSkill2 = diceResult2 + character2.MANOBRABILIDADE;
 
-            await logRollResult(character1.NOME, "manobrabilidade", diceResult1, character1.MANOBRABILIDADE);
-            await logRollResult(character2.NOME, "manobrabilidade", diceResult2, character2.MANOBRABILIDADE);
+            await logRollResult(character1.NOME, "manobrabilidade", diceResult1, character1.MANOBRABILIDADE, false);
+            await logRollResult(character2.NOME, "manobrabilidade", diceResult2, character2.MANOBRABILIDADE, false);
         } else if (block === 'CONFRONTO') {
             let dicePower1 = await rollDice();
             let dicePower2 = await rollDice();
@@ -92,24 +97,16 @@ async function playRaceEngine(character1, character2) {
 
             console.log(`${character1.NOME} confrontou ${character2.NOME} com ${powerHability1} vs ${powerHability2}! 🥊`);
 
-            await logRollResult(character1.NOME, "poder", dicePower1, character1.PODER);
-            await logRollResult(character2.NOME, "poder", dicePower2, character2.PODER);
+            await logRollResult(character1.NOME, "poder", dicePower1, character1.PODER, true, powerHability1 === "CASCO" ? 1 : 2); //aqui eu estou passando o valor 1 para o powerHabilityEffect caso o poder seja CASCO, caso contrário eu passo o valor 2.
+            await logRollResult(character2.NOME, "poder", dicePower2, character2.PODER, true, powerHability2 === "CASCO" ? 1 : 2); //aqui eu estou passando o valor 1 para o powerHabilityEffect caso o poder seja CASCO, caso contrário eu passo o valor 2.
 
             // Aplicar efeitos dos poderes usados no confronto
-            if (powerHability1 === "CASCO") {
+            if (powerHability1 === "CASCO") { //aqui eu estou verificando se o poder do character1 é CASCO
                 console.log(`${character1.NOME} usou Casco! ${character2.NOME} perdeu 1 ponto!`);
                 character2.PONTOS = Math.max(0, character2.PONTOS - 1);
-            } else if (powerHability1 === "BOMBA") {
-                console.log(`${character1.NOME} usou Bomba! ${character2.NOME} perdeu 2 pontos!`);
+            } else if (powerHability1 === "BOMBA") { //aqui eu estou verificando se o poder do character1 é BOMBA
+                console.log(`${character1.NOME} usou Bomba! ${character2.NOME} perdeu 2 pontos!`); //aqui eu estou exibindo uma mensagem informando que o character1 usou a BOMBA e o character2 perdeu 2 pontos.
                 character2.PONTOS = Math.max(0, character2.PONTOS - 2);
-            }
-
-            if (powerHability2 === "CASCO") {
-                console.log(`${character2.NOME} usou Casco! ${character1.NOME} perdeu 1 ponto!`);
-                character1.PONTOS = Math.max(0, character1.PONTOS - 1);
-            } else if (powerHability2 === "BOMBA") {
-                console.log(`${character2.NOME} usou Bomba! ${character1.NOME} perdeu 2 pontos!`);
-                character1.PONTOS = Math.max(0, character1.PONTOS - 2);
             }
 
             if (powerResult1 > powerResult2) {
@@ -126,6 +123,7 @@ async function playRaceEngine(character1, character2) {
             console.log(`🏆 ${character1.NOME} venceu a rodada e marcou 1 ponto!`);
         } else if (TotalTestSkill2 > TotalTestSkill1) {
             character2.PONTOS++;
+            console.log(`🏆 ${character2.NOME} venceu a rodada e marcou 1 ponto!`);
         }
 
         console.log(`___________________________________________________`);
